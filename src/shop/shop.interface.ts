@@ -1,6 +1,6 @@
 import { Document } from 'mongoose';
 
-export interface Shop extends Document {
+export interface IShop extends Document {
   CMPNM_NM: string; // 상호명
   INDUTYPE_CD?: string; // 업종코드
   BIZCOND_NM?: string; // 업태명
@@ -18,4 +18,9 @@ export interface Shop extends Document {
   REFINE_WGS84_LAT?: string; // 위도
   SIGUN_CD?: string; // 시군코드
   SIGUN_NM?: string; // 시군명
+}
+
+export interface ShopMeta extends Document {
+  shops: IShop[];
+  lastUpdate: Date;
 }

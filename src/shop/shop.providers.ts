@@ -5,7 +5,7 @@ export const shopProviders = [
   {
     provide: 'SHOP_MODEL',
     useFactory: (connection: Connection) =>
-      connection.model('Shop', ShopSchema),
+      connection.model('Shop', ShopSchema, 'Shop'),
     inject: ['DATABASE_CONNECTION'],
   },
 ];

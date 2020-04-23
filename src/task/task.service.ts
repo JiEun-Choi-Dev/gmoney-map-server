@@ -1,26 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression, Timeout } from '@nestjs/schedule';
+import { Cron, CronExpression, Timeout, Interval } from '@nestjs/schedule';
 import { GmoneyService } from 'src/gmoney/gmoney.service';
+import { ShopService } from 'src/shop/shop.service';
 
 @Injectable()
 export class TaskService {
   private readonly logger = new Logger(TaskService.name);
 
-  constructor(private gemoneyService: GmoneyService) {}
+  constructor(
+    private gemoneyService: GmoneyService,
+    private shopService: ShopService,
+  ) {}
 
-  //   @Cron(CronExpression.EVERY_15_SECONDS)
-  @Timeout(4)
-  handleCron() {
-    const start_dt = new Date();
-    this.logger.log('[API Saved DB Migration] Processing Start - ' + start_dt);
-    this.gemoneyService.findAllGmoneyApiData().then(res => {
-      const end_dt = new Date();
-
-      const diff_time = end_dt.getTime() - start_dt.getTime();
-
-      this.logger.log(
-        '[API Saved DB Migration] Processing end - ' + diff_time / 1000,
-      );
-    });
+  // @Timeout(0) // 바로 실행됨
+  @Cron(CronExpression.EVERY_DAY_AT_3AM)
+  async handleCron() {
+    this.logger.log(
+      '[API Saved DB Migration] Processing Start - ' + new Date(),
+    );
+    this.shopService.clearAll();
+    await this.gemoneyService.savedGmoneyData();
   }
 }

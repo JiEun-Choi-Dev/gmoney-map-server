@@ -1,12 +1,13 @@
 import { Injectable, HttpService, Logger } from '@nestjs/common';
 import { GmoneyApiInterface } from './gmoney.interface';
 import { ShopService } from 'src/shop/shop.service';
-import { Shop } from '../shop/shop.interface';
+import { IShop } from '../shop/shop.interface';
 
 @Injectable()
 export class GmoneyService {
   public index: number = 1;
-  public items: Shop[] = [];
+  public items: any[] = [];
+  public totalElement: number = 0;
   private readonly logger = new Logger(GmoneyService.name);
 
   constructor(
@@ -14,46 +15,59 @@ export class GmoneyService {
     private shopService: ShopService,
   ) {}
 
-  async findAllGmoneyApiData() {
+  /**
+   * API 에서 데이터를 수집합니다.
+   */
+  async savedGmoneyData() {
     this.logger.log(`CALL OpenAPI Server: index - ${this.index}`);
-    const {
-      data: { RegionMnyFacltStus },
-    } = await this.httpService
-      .get(`https://openapi.gg.go.kr/RegionMnyFacltStus`, {
-        params: {
-          KEY: process.env.GMONEY_API_KEY,
-          Type: 'json',
-          pIndex: this.index,
-          pSize: 1000,
-        },
-      })
-      .toPromise();
 
-    const totalElement: number = RegionMnyFacltStus[0].head[0].list_total_count;
-    const metadata = RegionMnyFacltStus[0].head[1];
-    const elements: Shop[] = RegionMnyFacltStus[1].row;
+    if (this.items.length < this.totalElement || this.totalElement === 0) {
+      const {
+        data: { RegionMnyFacltStus },
+      } = await this.httpService
+        .get(`https://openapi.gg.go.kr/RegionMnyFacltStus`, {
+          params: {
+            KEY: process.env.GMONEY_API_KEY,
+            Type: 'json',
+            pIndex: this.index,
+            pSize: 1000,
+          },
+        })
+        .toPromise();
 
-    if (this.index * 1000 < totalElement) {
-      console.log('more');
+      this.totalElement = RegionMnyFacltStus[0].head[0].list_total_count;
+      const elements: IShop[] = RegionMnyFacltStus[1].row.map(item => {
+        return {
+          ...item,
+          REFINE_WGS84_LAT: Number(item.REFINE_WGS84_LAT),
+          REFINE_WGS84_LOGT: Number(item.REFINE_WGS84_LOGT),
+        };
+      });
       this.index++;
       this.items = this.items.concat(elements);
-      this.logger.log('Current Saved Contents: ' + this.items.length);
-      this.findAllGmoneyApiData();
-    } else {
-      return this.savedData();
+
+      const percent = ((this.items.length / this.totalElement) * 100).toFixed(
+        2,
+      );
+      this.logger.log(
+        `Current Saved Contents: [${percent}%] ${this.items.length} / ${this.totalElement}`,
+      );
+
+      try {
+        this.logger.log('Start Save Mongodb');
+        await this.shopService.saveAll(elements);
+      } catch (e) {
+        this.logger.error('Update Error');
+      } finally {
+        this.logger.log(' G-Money Data Save End ');
+      }
+
+      // Recursive
+      return this.savedGmoneyData();
     }
-  }
 
-  async savedData() {
-    this.logger.log('Saved Contents Processing');
-
-    // insert db
-    this.shopService.saveAll(this.items);
-
-    // end insert db
     this.index = 1;
     this.items = [];
-
-    return true;
+    this.totalElement = 0;
   }
 }

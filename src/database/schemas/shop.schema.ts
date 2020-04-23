@@ -1,6 +1,7 @@
 import * as mongoose from 'mongoose';
+import { IShop } from '../../shop/shop.interface';
 
-export const ShopSchema = new mongoose.Schema({
+export const ShopSchema = new mongoose.Schema<IShop>({
   CMPNM_NM: String, // 상호명
   INDUTYPE_CD: String, // 업종코드
   BIZCOND_NM: String, // 업태명
@@ -18,4 +19,5 @@ export const ShopSchema = new mongoose.Schema({
   REFINE_WGS84_LAT: String, // 위도
   SIGUN_CD: String, // 시군코드
   SIGUN_NM: String, // 시군명
+  CREATE_DT: { type: Date, default: Date.now },
 });
