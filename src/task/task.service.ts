@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression, Timeout, Interval } from '@nestjs/schedule';
+import { Cron, CronExpression, Timeout } from '@nestjs/schedule';
 import { GmoneyService } from 'src/gmoney/gmoney.service';
 import { ShopService } from 'src/shop/shop.service';
 
